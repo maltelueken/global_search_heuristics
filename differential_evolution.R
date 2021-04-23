@@ -19,7 +19,7 @@ crossover <- function(target, mutant, CR) {
 }
 
 selection <- function(trial, target, cost) {
-	# print(c(trial, cost(trial)))
+	print(c(trial, cost(trial)))
 	if (cost(trial) < cost(target)) {
 		return(trial)
 	} else {
@@ -45,7 +45,7 @@ differential_evolution <- function(G, np, f, CR, cost, max_gen) {
 
 n <- 100
 
-dat <- rnorm(n, 0, 5) + rnorm(n, 0, 1)
+dat <- rnorm(n, 0, 5)
 
 
 CR <- 0.5
@@ -60,4 +60,4 @@ ll <- function(x) {
 	-sum(dnorm(dat, x[1], exp(x[2]), log = TRUE))
 }
 
-differential_evolution(G, np, 1, CR, ll, 1000)
+differential_evolution(G, np, 1, CR, ll, 100)
