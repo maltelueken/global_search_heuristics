@@ -42,7 +42,6 @@ selection <- function(trial, target, cost) {
 }
 
 
-# Define UI for application that draws a histogram
 ui <- fluidPage(
 	
 	tags$head(tags$style(
@@ -54,10 +53,8 @@ ui <- fluidPage(
           font-family: "Arial";
         }'))),
 	
-	# Application title
 	titlePanel("Differential Evolution"),
 	
-	# Sidebar with a slider input for number of bins 
 	fluidRow(
 		column(4,
 					 sidebarLayout(
@@ -289,7 +286,6 @@ ui <- fluidPage(
 	)
 )
 
-# Define server logic required to draw a histogram
 server <- function(input, output, session) {
 	
 	dims <- reactive({
@@ -788,5 +784,4 @@ server <- function(input, output, session) {
 	})
 }
 
-# Run the application 
 shinyApp(ui = ui, server = server)
