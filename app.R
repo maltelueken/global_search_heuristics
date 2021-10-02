@@ -1,4 +1,4 @@
-
+#
 # Shiny app on global search heuristics
 # 
 # This is a didactic tool to visualize and understand the behavior of the 
@@ -14,6 +14,9 @@ library(shiny)
 library(shinyFiles)
 
 
+### Define functions for differential evolution algorithm
+
+# Mutation step
 mutation <- function(G, f, i) {
 	idx <- sample((1:ncol(G))[-i], size = 3, replace = FALSE)
 	
@@ -22,6 +25,7 @@ mutation <- function(G, f, i) {
 	return(mutant)
 }
 
+# Crossover step
 crossover <- function(target, mutant, CR) {
 	
 	randUnif <- runif(length(target), 0, 1)
@@ -33,6 +37,7 @@ crossover <- function(target, mutant, CR) {
 	return(trial)
 }
 
+# Selection step
 selection <- function(trial, target, cost) {
 	if (cost(trial) < cost(target)) {
 		return(trial)
@@ -42,8 +47,10 @@ selection <- function(trial, target, cost) {
 }
 
 
+# Create user interface in shiny
 ui <- fluidPage(
 	
+	# Define html style
 	tags$head(tags$style(
 		HTML('
          #sidebar, #sidebar2 {
@@ -64,6 +71,8 @@ ui <- fluidPage(
 					 		
 					 		div(style = "float:right", actionButton("help", "Help")),
 					 		
+					 		
+					 		# Create input panel with options
 					 		h3("Input"),
 					 		
 					 		selectInput("example", "Choose example:",
@@ -118,6 +127,7 @@ ui <- fluidPage(
 					 	sidebarPanel(
 					 		width = 12,
 					 		
+					 		# Create control panel with options
 					 		h3("Control"),
 					 		
 					 		id = "sidebar2",
@@ -158,11 +168,10 @@ ui <- fluidPage(
 					 			
 					 		)
 					 	),
-					 	
-					 	# Show a plot of the generated distribution
 					 	mainPanel(
 					 		width = 12,
 					 		
+					 		# Create an output panel with plots
 					 		h3("Output"),
 					 		
 					 		tabsetPanel(type = "tabs",
@@ -286,12 +295,15 @@ ui <- fluidPage(
 	)
 )
 
+# Define server function that connects algorithm with user interface
 server <- function(input, output, session) {
 	
+	# Retrieve dimensions
 	dims <- reactive({
 		input[["dims"]]
 	})
 	
+	# Define examples
 	examples <- reactive({
 		list(
 			deJonge1 = list(
@@ -327,6 +339,7 @@ server <- function(input, output, session) {
 		)[[input[["example"]]]]
 	})
 	
+	# Update options based on examples and dimensions
 	observe({
 		
 		updateSelectInput(session, "dimensionCost",
@@ -365,20 +378,24 @@ server <- function(input, output, session) {
 											step = (max - min) / 10)
 	})
 	
+	# Retrieve cost function
 	costfun <- reactive({
 		examples()[["fun"]]
 	})
 	
+	# Retrieve value to reach
 	vtr <- reactive({
 		examples()[["vtr"]]
 	})
 	
+	# Initialize populations
 	pops <- reactiveValues(
 		G = NULL,
 		i = 1,
 		done = FALSE
 	)
 	
+	# Create plot for cost function
 	createCostPlot <- function() {
 		if (!is.null(pops$G)) {
 			
@@ -431,10 +448,12 @@ server <- function(input, output, session) {
 		}
 	}
 	
+	# Render cost function plot to output
 	output$costPlot <- renderPlot({
 		createCostPlot()
 	})
 	
+	# Create plot for parameter plane
 	createPlanePlot <- function() {
 		if (!is.null(pops$G)) {
 			
@@ -484,13 +503,16 @@ server <- function(input, output, session) {
 		}
 	}
 	
+	# Render parameter plane plot to output
 	output$planePlot <- renderPlot({
 		createPlanePlot()
 	})
 	
+	# Initialize timers
 	trigger <- reactiveValues()
 	trigger$timer <- reactiveTimer(Inf, session)
 	
+	# Define function for differential evolution algorithm
 	diffEv <- function() {
 		if (!is.null(pops$G)) {
 			gen <- matrix(0, ncol = isolate(input[["np"]]), nrow = dims())
@@ -504,14 +526,13 @@ server <- function(input, output, session) {
 			
 			pops$i <- pops$i + 1
 			
-			# print(pops$i)
-			
 			pops$G <- array(c(pops$G, gen), dim = c(dims(), isolate(input[["np"]]), pops$i))
 			
 			pops$done <- any(abs(vtr() - apply(gen, 2, costfun())) < isolate(input[["tol"]]))
 		}
 	}
 	
+	# Start algorithm and timer
 	observeEvent(input$start,
 							 {
 							 	
@@ -526,28 +547,34 @@ server <- function(input, output, session) {
 							 	
 							 })
 	
+	# Apply algorithm while timer runs
 	observeEvent(trigger$timer(), {
 		diffEv()
 	})
 	
+	# Stop algorith when finding value to reach
 	observeEvent(pops$done, {
 		trigger$timer <- reactiveTimer(Inf, session)
 	})
 	
+	# Stop algorithm when pressing 'stop'
 	observeEvent(input$stop, {
 		trigger$timer <- reactiveTimer(Inf, session)
 	})
 	
+	# Skip algorithm steps
 	observeEvent(input$skip, {
 		for (i in 1:input$steps) {
 			diffEv()
 		}
 	})
 	
+	# Go backwards in algorithm trajectory
 	observeEvent(input$back, {
 		pops$i <- pops$i - input$steps
 	})
 	
+	# Reset algorithm state
 	observeEvent(input$reset, {
 		trigger$timer <- reactiveTimer(Inf, session)
 		pops$G <- NULL
@@ -556,6 +583,7 @@ server <- function(input, output, session) {
 		pops$done <- FALSE
 	})
 	
+	# Save cost function plot
 	observeEvent(input$saveDirCost, {
 		if (!is.null(pops$G) && !is.integer(input$saveDirCost)) {
 			
@@ -567,6 +595,7 @@ server <- function(input, output, session) {
 		}
 	})
 	
+	# Save parameter plane plot
 	observeEvent(input$saveDirPlane, {
 		if (!is.null(pops$G) && !is.integer(input$saveDirPlane)) {
 			
@@ -581,6 +610,7 @@ server <- function(input, output, session) {
 	shinyFileSave(input, "saveDirCost", session = session, roots = c('wd' = '.'), defaultRoot = "wd")
 	shinyFileSave(input, "saveDirPlane", session = session, roots = c('wd' = '.'), defaultRoot = "wd")
 	
+	# Create help file dialogue
 	observeEvent(input$help, {
 		showModal(modalDialog(
 			title = "Help",
