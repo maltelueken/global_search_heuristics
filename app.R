@@ -47,7 +47,8 @@ selection <- function(trial, target, cost) {
 }
 
 
-# Create user interface in shiny
+### Create user interface in shiny
+
 ui <- fluidPage(
 	
 	# Define html style
@@ -295,7 +296,8 @@ ui <- fluidPage(
 	)
 )
 
-# Define server function that connects algorithm with user interface
+### Define server function that connects algorithm with user interface
+
 server <- function(input, output, session) {
 	
 	# Retrieve dimensions
@@ -610,7 +612,8 @@ server <- function(input, output, session) {
 	shinyFileSave(input, "saveDirCost", session = session, roots = c('wd' = '.'), defaultRoot = "wd")
 	shinyFileSave(input, "saveDirPlane", session = session, roots = c('wd' = '.'), defaultRoot = "wd")
 	
-	# Create help file dialogue
+	### Create help file dialogue
+	
 	observeEvent(input$help, {
 		showModal(modalDialog(
 			title = "Help",
